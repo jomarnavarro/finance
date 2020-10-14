@@ -7,7 +7,7 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import apology, login_required, lookup, usd, is_int
+from helpers import apology, login_required, lookup, usd, is_int, meets_complexity
 
 # Configure application
 app = Flask(__name__)
@@ -218,6 +218,8 @@ def register():
             return apology('You did not enter a password.', 403)
         if password != repeat_password:
             return apology('Passwords do not match.', 403)
+        if not meets_complexity(password):
+            return apology('Password must: \n\t-be 8+ characters long.\n\t-contain uppercase and lowercase letters\n\t-a number and a symbol\n\n', 403)
 
         rows = db.execute("SELECT * FROM users WHERE username=:username",
             username=username)

@@ -1,6 +1,7 @@
 import os
 import requests
 import urllib.parse
+import re
 
 from flask import redirect, render_template, request, session
 from functools import wraps
@@ -70,4 +71,8 @@ def is_int(s):
         return True
     except ValueError:
         return False
+
+
+def meets_complexity(password):
+    return (len(password) < 8) and (re.search(r"\d", password) is None) and (re.search(r"[A-Z]", password) is None) and (re.search(r"[a-z]", password) is None) and (re.search(r"[ !#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', password) is None)
 
