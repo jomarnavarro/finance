@@ -47,7 +47,8 @@ def index():
     user_id = session['user_id']
     # get this select
     # select symbol, sum(num_shares) as num_shares from transactions where user_id = 1 GROUP BY symbol;
-    rows = db.execute("SELECT symbol, sum(num_shares) AS num_shares FROM transactions WHERE user_id = :user_id GROUP BY symbol",
+    # potential bug.  this will show symbols whose shares are greater than zero.
+    rows = db.execute("SELECT symbol, sum(num_shares) AS ns FROM transactions WHERE user_id = :user_id GROUP BY symbol HAVING ns > 0",
         user_id=user_id)
 
     print(rows)
@@ -57,7 +58,7 @@ def index():
         quote = lookup(row['symbol'])
         row['name'] = quote['name']
         row['price'] = quote['price']
-        row['partial_total'] =  quote['price'] * row['num_shares']
+        row['partial_total'] =  quote['price'] * row['ns']
         grand_total = grand_total + row ['partial_total']
 
     print(rows)
@@ -232,7 +233,47 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    if request.method == 'GET':
+        # get the valid shares
+        rows = db.execute("SELECT symbol, sum(num_shares) AS ns FROM transactions WHERE user_id = :user_id GROUP BY symbol HAVING ns > 0",
+        user_id=session['user_id'])
+        return render_template("sell.html", symbols=rows)
+    else:
+        symbol = request.form.get('symbol')
+        if not symbol:
+            return apology('Invalid symbol', 403)
+        qty = request.form.get('qty')
+
+        if not is_int(qty) or int(qty) < 1:
+            return apology("You must enter a number greater than 0", 402)
+        else:
+            qty = int(qty)
+
+        # Get the number of shares for this symbol
+        rows = db.execute("SELECT sum(num_shares) AS ns FROM transactions WHERE user_id = :user_id AND symbol = :symbol GROUP BY symbol",
+            user_id=session['user_id'], symbol=symbol)
+
+        num_shares = rows[0]['ns']
+        # check num_shares is not less than the quantity
+        if num_shares < qty:
+            return apology(f"You can't sell {qty} shares. You only have {num_shares}.", 402)
+        # sell value
+        quote = lookup(symbol)
+        value = qty * quote['price']
+        # get the cash and calculate the value of the shares
+        rows = db.execute("SELECT cash FROM users WHERE id = :id",
+            id=session['user_id'])
+        cash = rows[0]['cash']
+        new_cash = cash + value
+        # update cash
+        db.execute("UPDATE users SET cash = :cash_left WHERE id = :id ",
+                cash_left=new_cash, id=session['user_id'])
+
+        # insert the transaction with negative value num shares
+        db.execute("INSERT INTO transactions (user_id, symbol, num_shares, price) VALUES (?, ?, ?, ?)",
+                session['user_id'], symbol.upper(), qty * -1, quote['price'])
+
+        return redirect('/')
 
 
 def errorhandler(e):
