@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Index
+{% endblock %}
+
+{% block main %}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Shares</th>
+            <th>Price</th>
+            <th>TOTAL</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for stock in stocks %}
+    <tr>
+        <td>{{ stock['symbol'] }}</td>
+        <td>{{ stock['name'] }}</td>
+        <td>{{ stock['num_shares'] }}</td>
+        <td>{{ "{:.2f}".format(stock['price']) }}</td>
+        <td>{{ "{:.2f}".format(stock['partial_total']) }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td>CASH</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{ "{:.2f}".format(cash) }}</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{ "{:.2f}".format(position) }}</td>
+    </tr>
+    </tbody>
+
+</table>
+{% endblock %}
