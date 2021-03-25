@@ -6,17 +6,51 @@
 
 {% block main %}
     <form action="/register" method="post">
-        <div class="form-group">
-            <input autocomplete="off" autofocus class="form-control" name="username" placeholder="Username" type="text">
+        <div class="row">
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="first_name" placeholder="First Name" type="text" minlength="3" maxlength="20" required>
+            </div>
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="last_name" placeholder="Last Name" type="text" minlength="2" maxlength="20" required>
+            </div>
         </div>
-        <div class="form-group">
-            <input class="form-control" name="password" placeholder="Password" type="password">
-            <label id="password" style="visible: none;"></label>
+        <div class="row">
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="username" placeholder="Username" type="text" minlength="5" maxlength="20" required>
+            </div>
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="email" placeholder="Email" type="email" required>
+            </div>
         </div>
-        <div class="form-group">
-            <input class="form-control" name="repeat_password" placeholder="Repeat Password" type="password">
-            <label id="repeat_password" style="visible: none;"></label>
+        <div class="row">
+            <div class="form-group col-md-6">
+                <input class="form-control" name="password" placeholder="Password" type="password" minlength="8" maxlength="20" required>
+                <label id="password" style="visible: none;"></label>
+            </div>
+            <div class="form-group col-md-6">
+                <input class="form-control" name="repeat_password" placeholder="Repeat Password" type="password" minlength="8" maxlength="20" required>
+                <label id="repeat_password" style="visible: none;"></label>
+            </div>
         </div>
-        <button class="btn btn-primary" type="submit">Register</button>
+        <div class="row">
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="phone" placeholder="Phone Number (Country) (Area) (Number)" type="text" minlength="10" maxlength="15" required>
+            </div>
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="birthdate" placeholder="Birthdate mm/dd/yyyy" type="date" required>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-md-6">
+                <input autocomplete="off" autofocus class="form-control" name="cc" placeholder="Credit Card" type="text" minlength="16" maxlength="16" required>
+            </div>
+            <div class="form-group col-md-4">
+                <input autocomplete="off" autofocus class="form-control" name="expiration" placeholder="mm/dd" type="text" minlength="5" maxlength="5" required>
+            </div>
+            <div class="form-group col-md-2">
+                <input autocomplete="off" autofocus class="form-control" name="cvv" placeholder="CVV" type="text" minlength="3" maxlength="3" required>
+            </div>
+        </div>
+        <button class="btn btn-primary" id="register_btn" type="submit">Register</button>
     </form>
 {% endblock %}

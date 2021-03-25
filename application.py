@@ -7,7 +7,7 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import apology, login_required, lookup, usd, is_int, meets_complexity
+from helpers import apology, login_required, lookup, usd, is_int, meets_complexity, parse_data
 
 # Configure application
 app = Flask(__name__)
@@ -209,27 +209,33 @@ def register():
     if request.method == "GET":
         return render_template("register.html")
     else:
-        username = request.form.get('username')
-        password = request.form.get('password')
-        repeat_password = request.form.get('repeat_password')
-        if not username:
+        data = parse_data(request)
+
+        # TODO validate cc and age
+        # TODO validate extra data
+        if not data['username']:
             return apology('You did not enter a username.', 403)
-        if not password or not repeat_password:
+        if not data['password'] or not data['repeat_password']:
             return apology('You did not enter a password.', 403)
-        if password != repeat_password:
+        if data['password'] != data['repeat_password']:
             return apology('Passwords do not match.', 403)
         # if not meets_complexity(password):
         #     return apology('Password must: \n\t-be 8+ characters long.\n\t-contain uppercase and lowercase letters\n\t-a number and a symbol\n\n', 403)
 
         rows = db.execute("SELECT * FROM users WHERE username=:username",
-            username=username)
+            username=data['username'])
 
         if len(rows) != 0:
-            return apology(f"{username} is already taken", 403)
+            return apology(f"{data['username']} is already taken", 403)
 
+        # TODO consider the scenario when 10 000 cash promotion is done
         db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
-            username, generate_password_hash(password))
+            data['username'], generate_password_hash(data['password']))
+        # TODO add insertion to user_data table.  create user_data table as well
 
+        # TODO send email to user with link to validate his account
+
+        flash(f"{data['username']} was succesfully registered.")
         return redirect("/login")
 
 

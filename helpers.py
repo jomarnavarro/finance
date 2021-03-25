@@ -76,3 +76,18 @@ def is_int(s):
 def meets_complexity(password):
     return (len(password) < 8) and (re.search(r"\d", password) is None) and (re.search(r"[A-Z]", password) is None) and (re.search(r"[a-z]", password) is None) and (re.search(r"[ !#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', password) is None)
 
+def parse_data(request):
+    return {
+        "first_name": request.form.get('first_name'),
+        "last_name": request.form.get('last_name'),
+        "username": request.form.get('username'),
+        "password": request.form.get('password'),
+        "repeat_password": request.form.get('repeat_password'),
+        "email": request.form.get('email'),
+        "phone": request.form.get('phone'),
+        "birthdate": request.form.get('birthdate'),
+        "cc": request.form.get('cc'),
+        "expiration": request.form.get('expiration'),
+        "cvv": request.form["cvv"]
+    }
+
