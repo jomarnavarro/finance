@@ -1,0 +1,11 @@
+version: "3"
+services:
+  finance:
+    image: omarnavarro/vamonos-finance
+    container_name: fin
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=application.py
+      - FLASK_DEBUG=1
+      - API_KEY=pk_f758a368f6ef4bc6add9936eda4ffd09
