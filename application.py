@@ -86,16 +86,19 @@ def buy():
         symbol = request.form.get('symbol')
         qty = request.form.get('qty')
         if not is_int(qty) or int(qty) < 1:
-            return apology("You must enter a number greater than 0", 402)
+            flash("You must enter a number greater than 0")
+            return redirect('/buy')
         else:
             qty = int(qty)
 
         if not symbol:
-            return apology('You must enter a symbol')
+            flash('You must enter a symbol')
+            return redirect('/buy')
 
         quote = lookup(symbol)
         if not quote:
-             return apology(f"{symbol} is not valid", 403)
+            flash(f"{symbol} does not exist")
+            return redirect('/buy')
 
         # if Im here it means both the symbol and the qty are correct.
         # check if the user can afford the purchase.
@@ -116,10 +119,11 @@ def buy():
             # insert transaction into said table
             db.execute("INSERT INTO transactions (user_id, symbol, num_shares, price) VALUES (?, ?, ?, ?)",
                 user_id, symbol.upper(), qty, quote['price'])
+            flash(f"You bought {qty} share(s) from {symbol}")    
             return redirect("/")
         else:
-            return apology(f"You are $ { value - cash } short for this transaction.", 402)
-
+            flash(f"You are $ { value - cash} short for this transaction.")
+            return redirect("/buy")
 
 
 @app.route("/history")
@@ -143,11 +147,13 @@ def login():
 
         # Ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username", 403)
-
+            flash("You must provide a username")
+            return render_template('login.html')
+            
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password", 403)
+            flash("You must provide a password")
+            return render_template('login.html')
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
@@ -155,12 +161,14 @@ def login():
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
-            return apology("invalid username and/or password", 403)
+            flash("invalid username and/or password")
+            return render_template('login.html')
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
-
+        un = request.form.get('username')
         # Redirect user to home page
+        flash(f"Welcome back {un}")
         return redirect("/")
 
     # User reached route via GET (as by clicking a link or via redirect)
@@ -189,12 +197,14 @@ def quote():
         # get the symbol
         symbol = request.form.get('symbol')
         if not symbol:
-            return apology("You must provide a symbol.", 400)
+            flash("You must provide a symbol.")
+            return redirect("/quote")
         quote = lookup(symbol)
         # print(quote)
 
         if not quote:
-            quote = { 'symbol': symbol }
+            flash(f"{symbol} is not a valid symbol.", 'error')
+            return redirect('/quote')
 
         return render_template('quoted.html', quote=quote)
         # query IEX for it.
@@ -214,11 +224,14 @@ def register():
         # TODO validate cc and age
         # TODO validate extra data
         if not data['username']:
-            return apology('You did not enter a username.', 403)
+            flash('You did not enter a username.')
+            return render_template('/register.html')
         if not data['password'] or not data['repeat_password']:
-            return apology('You did not enter a password.', 403)
+            flash('You did not enter a password.')
+            return render_template('/register.html')
         if data['password'] != data['repeat_password']:
-            return apology('Passwords do not match.', 403)
+            flash('Passwords do not match.')
+            return render_template('/register.html')
         # if not meets_complexity(password):
         #     return apology('Password must: \n\t-be 8+ characters long.\n\t-contain uppercase and lowercase letters\n\t-a number and a symbol\n\n', 403)
 
@@ -226,7 +239,8 @@ def register():
             username=data['username'])
 
         if len(rows) != 0:
-            return apology(f"{data['username']} is already taken", 403)
+            flash(f"{data['username']} is already taken")
+            return render_template('/register.html')
 
         # TODO consider the scenario when 10 000 cash promotion is done
         db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
@@ -236,7 +250,7 @@ def register():
         # TODO send email to user with link to validate his account
 
         flash(f"{data['username']} was succesfully registered.")
-        return redirect("/login")
+        return render_template('login.html')
 
 
 @app.route("/sell", methods=["GET", "POST"])
@@ -251,11 +265,13 @@ def sell():
     else:
         symbol = request.form.get('symbol')
         if not symbol:
-            return apology('Invalid symbol', 403)
+            flash("Wrong symbol")
+            return redirect("/sell")
         qty = request.form.get('qty')
 
         if not is_int(qty) or int(qty) < 1:
-            return apology("You must enter a number greater than 0", 402)
+            flash("You need to select a positive number")
+            return redirect("/sell")
         else:
             qty = int(qty)
 
@@ -266,7 +282,8 @@ def sell():
         num_shares = rows[0]['ns']
         # check num_shares is not less than the quantity
         if num_shares < qty:
-            return apology(f"You can't sell {qty} shares. You only have {num_shares}.", 402)
+            flash(f"You can't sell {qty} shares. You only have {num_shares}.")
+            return redirect("/sell")
         # sell value
         quote = lookup(symbol)
         value = qty * quote['price']
@@ -282,7 +299,7 @@ def sell():
         # insert the transaction with negative value num shares
         db.execute("INSERT INTO transactions (user_id, symbol, num_shares, price) VALUES (?, ?, ?, ?)",
                 session['user_id'], symbol.upper(), qty * -1, quote['price'])
-
+        flash(f"You sold {qty} share(s) from {symbol}")
         return redirect('/')
 
 
