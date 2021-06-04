@@ -18,27 +18,27 @@
     </thead>
     <tbody>
         {% for stock in stocks %}
-    <tr>
-        <td>{{ stock['symbol'] }}</td>
-        <td>{{ stock['name'] }}</td>
-        <td>{{ stock['ns'] }}</td>
-        <td>{{ "{:.2f}".format(stock['price']) }}</td>
-        <td>{{ "{:.2f}".format(stock['partial_total']) }}</td>
+    <tr val-type="stock">
+        <td col-type="symbol">{{ stock['symbol'] }}</td>
+        <td col-type="company_name">{{ stock['name'] }}</td>
+        <td col_type="num_shares">{{ stock['ns'] }}</td>
+        <td col-type="curr_val_per_share">{{ "{:.2f}".format(stock['price']) }}</td>
+        <td col-type="curr_val_shares">{{ "{:.2f}".format(stock['partial_total']) }}</td>
     </tr>
     {% endfor %}
-    <tr>
+    <tr val-type="cash">
         <td>CASH</td>
         <td></td>
         <td></td>
         <td></td>
-        <td>{{ "{:.2f}".format(cash) }}</td>
+        <td col-type="curr_cash_value">{{ "{:.2f}".format(cash) }}</td>
     </tr>
-    <tr>
+    <tr val-type="portfolio_value">
         <td></td>
         <td></td>
         <td></td>
         <td></td>
-        <td>{{ "{:.2f}".format(position) }}</td>
+        <td col-type="portfolio_value">{{ "{:.2f}".format(position) }}</td>
     </tr>
     </tbody>
 
