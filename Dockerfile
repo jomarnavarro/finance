@@ -1,11 +1,6 @@
-FROM ubuntu:latest 
+FROM python:3.8.11-alpine3.14
 
-RUN apt-get update -y \
-	&& apt-get install -y python3-pip python3-dev \
-	&& apt-get install  -y sqlite \
-	&& cd /usr/local/bin \
-	&& ln -s /usr/bin/python3 python \
-	&& pip3 install --upgrade pip
+RUN apk add sqlite
 
 COPY . /usr/src/app
 
