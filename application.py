@@ -307,6 +307,20 @@ def logout():
     return redirect("/")
 
 
+@app.route('/api/quote', methods=['POST'])
+@token_required
+def api_quote(user_id):
+    symb = request.json['symbol']
+    if not symb:
+        return jsonify({'message': 'You must provide a symbol'}), 422
+    quote = lookup(symb)
+
+    if not quote:
+        return jsonify({'message': f"{symb} is not a valid symbol"}), 422
+
+    return jsonify(quote)
+
+
 @app.route("/quote", methods=["GET", "POST"])
 @login_required
 def quote():
@@ -373,6 +387,38 @@ def register():
         return render_template('login.html')
 
 
+@app.route("/api/register", methods=["POST"])
+@token_required
+def api_register():
+    """Register user"""
+    data = request.get_json()
+    print(data)
+
+    # TODO validate cc and age
+    # TODO validate extra data
+    if not data['username']:
+        return jsonify({'message': 'You must provide a username'}), 422
+    if not data['password']:
+        return jsonify({'message': 'You must provide a password'}), 422
+    # if not meets_complexity(password):
+    #     return apology('Password must: \n\t-be 8+ characters long.\n\t-contain uppercase and lowercase letters\n\t-a number and a symbol\n\n', 403)
+
+    rows = db.execute("SELECT * FROM users WHERE username=:username",
+        username=data['username'])
+
+    if len(rows) != 0:
+        return jsonify({'message': f'User {data["username"]} already registered.'}), 422
+
+    # TODO consider the scenario when 10 000 cash promotion is done
+    db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
+        data['username'], generate_password_hash(data['password']))
+    # TODO add insertion to user_data table.  create user_data table as well
+
+    # TODO send email to user with link to validate his account
+
+    return jsonify({'message': f'User {data["username"]} has been registered.'}), 201
+
+
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
 def sell():
@@ -421,6 +467,52 @@ def sell():
                 session['user_id'], symbol.upper(), qty * -1, quote['price'])
         flash(f"You sold {qty} share(s) from {symbol}")
         return redirect('/')
+
+
+@app.route("/api/sell", methods=["POST"])
+@token_required
+def api_sell(user_id):
+    """Sell shares of stock"""
+    symbol = request.json['symbol']
+    if not symbol:
+        return jsonify({'message', 'You must provide a symbol'}), 422
+    qty = request.json['qty']
+
+    if not qty or not is_int(qty) or int(qty) < 1:
+        return jsonify({'message': 'You must provide a valid quantity'}), 422
+    else:
+        qty = int(qty)
+
+    # Get the number of shares for this symbol
+    rows = db.execute("SELECT sum(num_shares) AS ns FROM transactions WHERE user_id = :user_id AND symbol = :symbol GROUP BY symbol",
+        user_id=user_id, symbol=symbol)
+
+    print(f"len rows {len(rows)}")
+
+    if not rows:
+        return jsonify({'message': f"You have no shares from {symbol}."}), 422
+
+    num_shares = rows[0]['ns']
+    # check num_shares is not less than the quantity
+    if num_shares < qty:
+        return jsonify({'message': f"You have only {num_shares} share(s) from {symbol}.  You can't sell {qty} share(s)."}), 422
+        
+    # sell value
+    quote = lookup(symbol)
+    value = qty * quote['price']
+    # get the cash and calculate the value of the shares
+    rows = db.execute("SELECT cash FROM users WHERE id = :id",
+        id=user_id)
+    cash = rows[0]['cash']
+    new_cash = cash + value
+    # update cash
+    db.execute("UPDATE users SET cash = :cash_left WHERE id = :id ",
+            cash_left=new_cash, id=user_id)
+
+    # insert the transaction with negative value num shares
+    db.execute("INSERT INTO transactions (user_id, symbol, num_shares, price) VALUES (?, ?, ?, ?)",
+            user_id, symbol.upper(), qty * -1, quote['price'])
+    return jsonify({'message': f"You sold {qty} share(s) from {symbol}"}), 201
 
 
 def errorhandler(e):
