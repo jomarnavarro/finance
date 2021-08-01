@@ -163,7 +163,9 @@ def api_buy(user_id):
         # insert transaction into transactions table
         db.execute("INSERT INTO transactions (user_id, symbol, num_shares, price) VALUES (?,?,?,?)",
             user_id, symbol.upper(), qty, quote['price'])
-        return redirect('/api/portfolio'), 201
+        return jsonify({'message': f"You bought {qty} share(s) of {symbol}."}), 201
+    else:
+        return jsonify({'message': f"You are {value - cash} short for this transaction."}), 422
 
 
 @app.route("/buy", methods=["GET", "POST"])
