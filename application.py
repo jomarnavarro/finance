@@ -8,6 +8,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 import datetime
 import jwt
+from functools import wraps
 
 from helpers import apology, login_required, lookup, usd, is_int, meets_complexity, parse_data
 
@@ -47,6 +48,31 @@ db = SQL("sqlite:///finance.db")
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
 
+def token_required(f):
+    """
+    Decorate routes that require jwt token
+    
+    """
+    @wraps(f)
+    def deco_func(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        if not token:
+            return jsonify({'message': 'Token is missing'}), 401
+        
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            user_id = db.execute("SELECT * FROM users WHERE username = :username",
+                          username=data['username'])[0]['id']
+        except:
+            return jsonify({'message': 'Token is invalid'}), 401
+        
+        return f(user_id, *args, **kwargs)
+    
+    return deco_func
+
+
 @app.route("/")
 @login_required
 def index():
@@ -81,6 +107,63 @@ def index():
     print(grand_total)
     # render the index.html template with the dictionary and the cash amount dictionary
     return render_template("index.html", stocks=rows, cash=cash, position=grand_total)
+
+
+@app.route('/api/portfolio', methods=['GET'])
+@token_required
+def get_portfolio(user_id):
+    rows = db.execute("SELECT symbol, sum(num_shares) AS ns FROM transactions WHERE user_id = :user_id GROUP BY symbol HAVING ns > 0",
+        user_id=user_id)
+
+    grand_total = 0
+    for row in rows:
+        quote = lookup(row['symbol'])
+        row['name'] = quote['name']
+        row['price'] = quote['price']
+        row['partial_total'] = quote['price'] * row['ns']
+        grand_total += row['partial_total']
+
+    cash_rows = db.execute("SELECT cash FROM users WHERE id=:id",
+            id=user_id)
+
+    cash = cash_rows[0]['cash']
+
+    grand_total = grand_total + cash
+    return jsonify({'stocks': rows, 'cash': cash, 'position': grand_total})
+
+
+@app.route('/api/buy', methods=['POST'])
+@token_required
+def api_buy(user_id):
+    data = request.get_json()
+
+    symbol = data['symbol']
+    qty = data['qty']
+
+    if not symbol or not qty or not is_int(qty):
+        return jsonify({'message': 'You must provide both Symbol and Quantity'}), 422
+    else:
+        qty = int(qty)
+    
+    quote = lookup(symbol)
+    if not quote:
+        return jsonify({'message': f"{symbol} does not exist"})
+    
+    value = qty * quote['price']
+    rows = db.execute("SELECT cash FROM users WHERE id = :id",
+            id=user_id)
+    if len(rows) != 1:
+        return jsonify({"message": "User does not exist"})
+    
+    cash = rows[0]['cash']
+    if cash >= value:
+        # update user cash
+        cash_left = cash - value
+        db.execute("UPDATE users SET cash= :cash_left WHERE id = :id", cash_left=cash_left, id=user_id)
+        # insert transaction into transactions table
+        db.execute("INSERT INTO transactions (user_id, symbol, num_shares, price) VALUES (?,?,?,?)",
+            user_id, symbol.upper(), qty, quote['price'])
+        return redirect('/api/portfolio'), 201
 
 
 @app.route("/buy", methods=["GET", "POST"])
