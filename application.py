@@ -224,7 +224,18 @@ def history():
     """Show history of transactions"""
     rows = db.execute("SELECT symbol, num_shares AS ns, price, time FROM transactions where user_id = :id ORDER BY time ASC",
         id=session['user_id'])
+    
     return render_template("history.html", stocks=rows)
+
+
+@app.route("/api/history", methods=['GET'])
+@token_required
+def api_history(user_id):
+    """Show history of transactions"""
+    rows = db.execute("SELECT symbol, num_shares AS ns, price, time FROM transactions where user_id = :id ORDER BY time ASC",
+        id=user_id)
+    transactions_list = []
+    return jsonify({'transactions': rows}), 200
 
 
 @app.route("/login", methods=["GET", "POST"])
