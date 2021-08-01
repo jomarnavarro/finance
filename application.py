@@ -1,11 +1,13 @@
 import os
 
 from cs50 import SQL
-from flask import Flask, flash, jsonify, redirect, render_template, request, session
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, make_response
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
+import datetime
+import jwt
 
 from helpers import apology, login_required, lookup, usd, is_int, meets_complexity, parse_data
 
@@ -15,6 +17,12 @@ app = Flask(__name__)
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+# creates secret key config
+if os.environ.get('SECRET_KEY'):
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+else:
+    raise RuntimeError("SECRET_KEY Environment variable must be set.")
+    
 # Ensure responses aren't cached
 @app.after_request
 def after_request(response):
@@ -38,7 +46,6 @@ db = SQL("sqlite:///finance.db")
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
-
 
 @app.route("/")
 @login_required
@@ -175,6 +182,23 @@ def login():
     else:
         return render_template("login.html")
 
+
+@app.route("/api/login", methods=['POST'])
+def api_login():
+    # session.clear()
+    user = request.json['username']
+    passwd = request.json['password']
+    print(f"username: {user}, password: {passwd}")
+
+    if not user or not passwd:
+        return jsonify({"error": "You must provide a valid username and password."}), 401
+    rows = db.execute("SELECT * FROM users WHERE username = :username", username=user)
+    if len(rows) != 1 or not check_password_hash(rows[0]['hash'], passwd):
+        return jsonify({"error": "invalid username or password"}), 401
+   
+    token = jwt.encode({'username': user, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+    return jsonify({'token': token.decode('UTF-8')})
+    
 
 @app.route("/logout")
 def logout():
