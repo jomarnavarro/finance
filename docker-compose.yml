@@ -1,7 +1,7 @@
 version: "3"
 services:
   finance:
-    image: finance
+    image: finance:api
     container_name: fin
     ports:
       - "5000:5000"
@@ -9,3 +9,4 @@ services:
       - FLASK_APP=application.py
       - FLASK_DEBUG=1
       - API_KEY=pk_fe9f206ad6f742529e311f50ea2ecd5b
+      - SECRET_KEY=thisismyverysecretkey
