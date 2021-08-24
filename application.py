@@ -389,7 +389,7 @@ def register():
 
 @app.route("/api/register", methods=["POST"])
 @token_required
-def api_register():
+def api_register(user_id):
     """Register user"""
     data = request.get_json()
     print(data)
