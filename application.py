@@ -20,7 +20,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # creates secret key config
 if os.environ.get('SECRET_KEY'):
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    app.config['SECRET_KEY'] = '6dv46sd8b4'#os.environ.get('SECRET_KEY')
 else:
     raise RuntimeError("SECRET_KEY Environment variable must be set.")
     
@@ -45,8 +45,8 @@ Session(app)
 db = SQL("sqlite:///finance.db")
 
 # Make sure API key is set
-if not os.environ.get("API_KEY"):
-    raise RuntimeError("API_KEY not set")
+#if not os.environ.get("API_KEY"):
+#    raise RuntimeError("API_KEY not set")
 
 def token_required(f):
     """
